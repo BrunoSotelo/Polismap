@@ -1,0 +1,27 @@
+[INSTRUCCIONES PARA EL USUARIO]
+
+Hola! Soy tu asistente de IA.
+No puedo generar archivos binarios de Microsoft Word (.docx) directamente.
+
+Por favor, haz lo siguiente para que el sistema funcione:
+
+1. Abre Microsoft Word en tu computadora.
+2. Escribe el siguiente texto en un documento en blanco:
+
+   "REPORTE ESTRATÉGICO
+   
+   Fecha: {{fecha_inicio}} al {{fecha_fin}}
+   
+   Resumen Ejecutivo:
+   {{resumen_ejecutivo}}
+   
+   Zonas Desatendidas:
+   {{zonas_desatendidas}}
+   
+   Sugerencias:
+   {{sugerencia_estrategica}}"
+
+3. Guarda este archivo con el nombre "template_default.docx".
+4. Mueve ese archivo dentro de esta carpeta: `public/templates/`.
+
+¡Una vez hecho esto, el botón funcionará!

@@ -1,0 +1,9 @@
+REPORTE ESTRATÉGICO
+
+Periodo: {{fecha_inicio}} al {{fecha_fin}}
+
+RESUMEN EJECUTIVO {{resumen_ejecutivo}}
+
+ZONAS DESATENDIDAS {{zonas_desatendidas}}
+
+ESTRATEGIA RECOMENDADA {{sugerencia_estrategica}}
