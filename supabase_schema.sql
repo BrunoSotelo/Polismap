@@ -38,8 +38,8 @@ create table if not exists affinities (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 4. Eventos (Bitácora de "Toques")
-create table if not exists events (
+-- 4. Bitacoras (Antes Eventos)
+create table if not exists bitacoras (
   id uuid default gen_random_uuid() primary key,
   titulo text not null,
   descripcion text,
@@ -49,6 +49,7 @@ create table if not exists events (
   lat float,
   lng float,
   evidencia_urls text[] default array[]::text[],
+  seccion_id integer references secciones_electorales(id), -- Added for RLS filtering
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
@@ -61,7 +62,7 @@ create table if not exists events (
 alter table secciones_electorales enable row level security;
 alter table leaders enable row level security;
 alter table affinities enable row level security;
-alter table events enable row level security;
+alter table bitacoras enable row level security;
 
 -- Helper function para obtener el distrito del usuario actual
 create or replace function get_user_distrito()
@@ -148,16 +149,19 @@ create policy "Operativo crea afinidades en su distrito"
     )
   );
 
--- 4. Políticas para EVENTOS
-create policy "Admin ve todos los eventos"
-  on events for all
+-- 4. Políticas para BITACORAS
+create policy "Admin ve todas las bitacoras"
+  on bitacoras for all
   to authenticated
   using ( is_admin() );
 
--- Para eventos, asumimos que se filtran por ubicación (lat/lng) cruzando con secciones
--- O simplificamos agregando district_id o section_id a la tabla events (Recomendado para performance)
--- Por ahora, permitimos ver eventos si el usuario tiene permiso, pero idealmente events debería tener FK a sección
-create policy "Operativo ve y crea eventos"
-  on events for all
+-- Para bitacoras, filtramos por la columna seccion_id
+create policy "Operativo ve y crea bitacoras"
+  on bitacoras for all
   to authenticated
-  using ( true ); -- TODO: Refinar esto agregando columna seccion_id a events para filtrar por distrito
+  using (
+    -- Filtra bitacoras por la sección del usuario operativo
+    seccion_id in (
+      select id from secciones_electorales where distrito = get_user_distrito()
+    )
+  );
