@@ -251,6 +251,97 @@ export interface Database {
                     created_at?: string
                 }
             }
+            google_tokens: {
+                Row: {
+                    id: string
+                    user_id: string
+                    access_token_encrypted: string
+                    refresh_token_encrypted: string
+                    expires_at: string
+                    calendar_id: string
+                    connected_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    access_token_encrypted: string
+                    refresh_token_encrypted: string
+                    expires_at: string
+                    calendar_id?: string
+                    connected_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    access_token_encrypted?: string
+                    refresh_token_encrypted?: string
+                    expires_at?: string
+                    calendar_id?: string
+                    connected_at?: string
+                    updated_at?: string
+                }
+            }
+            bitacoras_sugeridas: {
+                Row: {
+                    id: string
+                    user_id: string
+                    google_event_id: string
+                    titulo: string
+                    descripcion: string | null
+                    ubicacion: string | null
+                    fecha_inicio: string
+                    fecha_fin: string | null
+                    invitados: any
+                    aforo_estimado: number
+                    tipo_sugerido: 'reunion_vecinal' | 'evento_publico' | 'recorrido' | 'otro' | null
+                    confidence_score: number
+                    clasificacion_razon: string | null
+                    estado: 'pendiente' | 'aprobada' | 'rechazada'
+                    bitacora_id: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    google_event_id: string
+                    titulo: string
+                    descripcion?: string | null
+                    ubicacion?: string | null
+                    fecha_inicio: string
+                    fecha_fin?: string | null
+                    invitados?: any
+                    aforo_estimado?: number
+                    tipo_sugerido?: 'reunion_vecinal' | 'evento_publico' | 'recorrido' | 'otro' | null
+                    confidence_score?: number
+                    clasificacion_razon?: string | null
+                    estado?: 'pendiente' | 'aprobada' | 'rechazada'
+                    bitacora_id?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    google_event_id?: string
+                    titulo?: string
+                    descripcion?: string | null
+                    ubicacion?: string | null
+                    fecha_inicio?: string
+                    fecha_fin?: string | null
+                    invitados?: any
+                    aforo_estimado?: number
+                    tipo_sugerido?: 'reunion_vecinal' | 'evento_publico' | 'recorrido' | 'otro' | null
+                    confidence_score?: number
+                    clasificacion_razon?: string | null
+                    estado?: 'pendiente' | 'aprobada' | 'rechazada'
+                    bitacora_id?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
         }
         Functions: {
             get_section_by_point: {
