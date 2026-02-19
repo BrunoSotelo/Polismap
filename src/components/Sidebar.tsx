@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, BarChart3, LogOut, Map as MapIcon, ChevronLeft, ChevronRight, BookOpen, ClipboardList, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, BarChart3, LogOut, Map as MapIcon, ChevronLeft, ChevronRight, BookOpen, ClipboardList, ShieldCheck, Sparkles } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; // Import context
 
@@ -20,6 +20,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     ];
 
     const navItems = [...baseNavItems];
+    // Bitácoras IA: disponible para todos los usuarios autenticados
+    navItems.push({ icon: Sparkles, label: 'Bitácoras IA', path: '/suggested-bitacoras' });
     if (profile?.is_admin) {
         navItems.push({ icon: ShieldCheck, label: 'Admin', path: '/admin' });
     }

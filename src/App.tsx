@@ -18,6 +18,7 @@ import { ThemeProvider } from './context/DesignSystem/ThemeContext';
 
 import UnifiedEntry from './pages/UnifiedEntry';
 import BrandingPreview from './pages/BrandingPreview';
+import SuggestedBitacoras from './pages/SuggestedBitacoras';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
               <Route path="/activities" element={<ActivityFeed />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/admin" element={<AdminUsers />} /> {/* Admin Route */}
+              <Route path="/suggested-bitacoras" element={<SuggestedBitacoras />} />
               <Route path="/map" element={<div className="p-10">Map Full View (Coming Soon)</div>} />
               <Route path="/leaders" element={<div className="p-10">Leaders Management (Coming Soon)</div>} />
               <Route path="/analytics" element={<div className="p-10">Analytics Dashboard (Coming Soon)</div>} />
