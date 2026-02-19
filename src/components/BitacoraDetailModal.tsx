@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Check, Loader2, Trash2, Edit2, Calendar, Users, FileText } from 'lucide-react';
+import { X, Check, Loader2, Trash2, Edit2, Calendar, Users, FileText, MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -49,6 +49,8 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGeocoding, setIsGeocoding] = useState(false);
+    const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
     // Combined State for Form
     const [data, setData] = useState<any>(null);
@@ -72,19 +74,36 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // Recalculate section if lat/lng changed (optional, keeping it simple for now)
-            // Just update fields
+            // Recalcular sección si hay coordenadas
+            let seccion_id = data.seccion_id; // Mantener anterior si falla
+            if (data.lat && data.lng) {
+                try {
+                    const { data: secData, error: secError } = await (supabase as any)
+                        .rpc('get_section_by_point', { lat: data.lat, lng: data.lng });
+
+                    if (!secError) {
+                        seccion_id = secData || null; // Si no encuentra, es null (fuera de zona)
+                        console.log('[save] Nueva sección detectada:', seccion_id);
+                    }
+                } catch (e) {
+                    console.error('Error calculando sección al guardar:', e);
+                }
+            }
+
             const { error } = await (supabase as any)
                 .from('bitacoras')
                 .update({
+                    titulo: data.titulo || null,
                     tipo: data.tipo,
                     descripcion: data.descripcion,
                     aforo: data.aforo,
                     fecha: data.fecha,
                     compromisos: data.compromisos,
                     comentarios: data.comentarios,
+                    ubicacion: data.ubicacion || null,
                     lat: data.lat,
-                    lng: data.lng
+                    lng: data.lng,
+                    seccion_id: seccion_id // Actualizar sección
                 } as any)
                 .eq('id', bitacoraId);
 
@@ -96,6 +115,42 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
             alert("Error al guardar cambios");
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // Geocodifica con Google Geocoding API (más preciso para Querétaro, ~$0 costo)
+    const geocodeUbicacion = async () => {
+        if (!data?.ubicacion?.trim()) return;
+        setIsGeocoding(true);
+        setGeocodeError(null);
+        try {
+            const apiKey = import.meta.env.VITE_GOOGLE_CLOUD_API_KEY;
+            if (!apiKey) {
+                setGeocodeError('API key no configurada (VITE_GOOGLE_CLOUD_API_KEY)');
+                return;
+            }
+            const url = new URL('https://maps.googleapis.com/maps/api/geocode/json');
+            url.searchParams.set('address', data.ubicacion);
+            url.searchParams.set('key', apiKey);
+            url.searchParams.set('region', 'mx');
+            // Sesgar resultados hacia Querétaro
+            url.searchParams.set('bounds', '20.2,-101.0|21.0,-99.5');
+
+            const res = await fetch(url.toString());
+            const json = await res.json();
+
+            if (json.status !== 'OK' || !json.results?.length) {
+                console.warn('[geocode] Google status:', json.status, json.error_message);
+                setGeocodeError(`No se encontraron coordenadas (${json.status})`);
+                return;
+            }
+            const loc = json.results[0].geometry.location;
+            console.log('[geocode] Google éxito:', json.results[0].formatted_address, loc);
+            setData((prev: any) => ({ ...prev, lat: loc.lat, lng: loc.lng }));
+        } catch {
+            setGeocodeError('Error al geocodificar. Verifica tu conexión.');
+        } finally {
+            setIsGeocoding(false);
         }
     };
 
@@ -138,6 +193,9 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
                                 </span>
                             )}
                         </h2>
+                        {!isEditing && data.titulo && (
+                            <p className="text-sm font-medium text-gray-700 mt-0.5">{data.titulo}</p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">ID: {bitacoraId.slice(0, 8)}...</p>
                     </div>
 
@@ -226,6 +284,16 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
                     {/* --- EDIT MODE --- */}
                     {isEditing && (
                         <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 mb-1 block">Título</label>
+                                <input
+                                    type="text"
+                                    value={data.titulo || ''}
+                                    onChange={e => setData({ ...data, titulo: e.target.value })}
+                                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-orange-500 outline-none"
+                                    placeholder="Nombre descriptivo del evento"
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 mb-1 block">Tipo</label>
@@ -254,7 +322,7 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
                             <div>
                                 <label className="text-xs font-bold text-gray-500 mb-1 block">Descripción</label>
                                 <textarea
-                                    value={data.descripcion}
+                                    value={data.descripcion || ''}
                                     onChange={e => setData({ ...data, descripcion: e.target.value })}
                                     className="w-full p-3 border rounded-md h-24 resize-none focus:ring-2 focus:ring-orange-500 outline-none"
                                 />
@@ -284,7 +352,39 @@ export function BitacoraDetailModal({ bitacoraId, onClose, onUpdate }: BitacoraD
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 mb-1 block">Ubicación</label>
+                                <label className="text-xs font-bold text-gray-500 mb-1 block">Ubicación (texto)</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={data.ubicacion || ''}
+                                        onChange={e => setData({ ...data, ubicacion: e.target.value })}
+                                        className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-orange-500 outline-none text-sm"
+                                        placeholder="Dirección o nombre del lugar"
+                                    />
+                                    <button
+                                        onClick={geocodeUbicacion}
+                                        disabled={isGeocoding || !data.ubicacion?.trim()}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-xs font-medium rounded-md transition-all whitespace-nowrap"
+                                        title="Buscar coordenadas para esta dirección"
+                                    >
+                                        {isGeocoding
+                                            ? <Loader2 size={13} className="animate-spin" />
+                                            : <MapPin size={13} />}
+                                        {isGeocoding ? 'Buscando...' : 'Geocodificar'}
+                                    </button>
+                                </div>
+                                {data.lat && data.lng && (
+                                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                        <MapPin size={10} /> Pin: {data.lat.toFixed(5)}, {data.lng.toFixed(5)}
+                                    </p>
+                                )}
+                                {geocodeError && (
+                                    <p className="text-xs text-red-500 mt-1">{geocodeError}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 mb-1 block">Ubicación en mapa (lat/lng)</label>
                                 <div className="h-48 border rounded-md overflow-hidden">
                                     <MapPicker
                                         initialPos={data.lat ? [data.lat, data.lng] : undefined}

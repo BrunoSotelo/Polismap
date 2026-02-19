@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { findSection, fetchAllSections } from '../../lib/geoUtils';
 import { ClipboardList, X, Check, Loader2, MapPin } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -63,6 +62,7 @@ export function LogForm({ onClose, onSuccess, className = '' }: LogFormProps) {
     const [showSuccess, setShowSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
+        titulo: '',
         tipo: 'reunion_vecinal' as 'reunion_vecinal' | 'evento_publico' | 'recorrido' | 'otro',
         descripcion: '',
         aforo: '',
@@ -86,21 +86,26 @@ export function LogForm({ onClose, onSuccess, className = '' }: LogFormProps) {
             let seccion_id = null;
             if (formData.lat && formData.lng) {
                 try {
-                    const sections = await fetchAllSections(supabase);
-                    const foundId = findSection(formData.lat, formData.lng, sections);
-                    if (foundId) {
-                        seccion_id = foundId;
+                    const { data: secData, error: secError } = await (supabase as any)
+                        .rpc('get_section_by_point', { lat: formData.lat, lng: formData.lng });
+
+                    if (secError) {
+                        console.error('Error RPC sección:', secError);
+                    } else {
+                        seccion_id = secData || null;
+                        console.log('[LogForm] Sección detectada:', seccion_id);
                     }
                 } catch (e) {
-                    console.error("Error detecting section:", e);
+                    console.error("Error detecting section via RPC:", e);
                 }
             }
 
             const { error: insertErr } = await supabase
                 .from('bitacoras')
                 .insert({
-                    user_id: user.id, // Actual User ID
-                    distrito_id: selectedDistrict, // Actual Selected District
+                    user_id: user.id,
+                    distrito_id: selectedDistrict,
+                    titulo: formData.titulo || null,
                     tipo: formData.tipo,
                     descripcion: formData.descripcion,
                     aforo: formData.aforo ? parseInt(formData.aforo) : null,
@@ -157,6 +162,17 @@ export function LogForm({ onClose, onSuccess, className = '' }: LogFormProps) {
             <div className="p-6 space-y-6 overflow-y-auto flex-1 custom-scrollbar">
 
                 <div className="grid grid-cols-1 gap-4">
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Título (Opcional)</label>
+                        <input
+                            type="text"
+                            value={formData.titulo}
+                            onChange={e => setFormData({ ...formData, titulo: e.target.value })}
+                            className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                            placeholder="Ej: Reunión con vecinos de Colonia Vista Hermosa"
+                        />
+                    </div>
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">Tipo de Interacción</label>
